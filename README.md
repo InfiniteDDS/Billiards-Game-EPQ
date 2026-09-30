@@ -7,6 +7,11 @@ This is a playable billiards game using python + pygame and pymunk with nine-bal
 - Animated ball movement (with pygame's blit function)
 - Fully functional cue-stick that orbits the ball in the way you choose.
 
+## Demos
+### Prototype 1
+![hippo](https://media.giphy.com/media/RCr3JCcWl7mKjJh744/giphy.gif)
+### Prototype 2
+![hippo](https://media.giphy.com/media/e0qNc19NBTHBrteHv1/giphy.gif)
 ## Overview
 ### Requirements
 - Python + pygame and pymunk installed (TBC)
