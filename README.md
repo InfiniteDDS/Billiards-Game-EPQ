@@ -9,7 +9,7 @@ This is a playable billiards game using python + pygame and pymunk with nine-bal
 
 ## Demos
 ### Prototype 1
-![hippo](https://media.giphy.com/media/ZO7USoRlgSSn4mtQfm/giphy.gif)
+![til](https://github.com/InfiniteDDS/Billiards-Game-EPQ/blob/main/image2.gif)
 ### Prototype 2
 ![hippo](https://media.giphy.com/media/e0qNc19NBTHBrteHv1/giphy.gif)
 ## Overview
