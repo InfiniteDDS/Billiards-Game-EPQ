@@ -10,6 +10,7 @@ import pygame
 import time
 import math
 import pymunk
+import pymunk.pygame_util
 # pygame setup
 time1 = time.time() 
 pygame.init()
@@ -40,27 +41,30 @@ kineticFriction = nf1 * u1 # 100 is the placeholder value for the unit of measur
 staticFriction = nf1 * u0 #MAY NEED TO CHANGE THIS the maximum static friction i.e. the force that needs to be overcome for the balls to move. 
 ##MAY NEED TO CHANGE
 # velocity of cuestick for certain shots
-softV = 1.4 * 2.7
-mediumV = 2.2 * 2.7
-fastV = 4.5 * 2.7
-breakV = 6 * 2.7
+conversionFactor = 500
+softV = 1.4 * conversionFactor
+mediumV = 2.2 * conversionFactor
+fastV = 4.5 * conversionFactor
+breakV = 6 * conversionFactor
 doOnce = True 
 hit = False
 rects = [
-    pygame.Rect(550,114,15,470), #left rect
-    pygame.Rect(550,114+470,217,15), # bottom rect
-    pygame.Rect(550+204,114,15,470), # right rect
-    pygame.Rect(550,114,217,15) # top rect
+    (550,114,15,470), #left rect
+    (550+204,114,15,470), # right rect
+    (550,114+470,217,15), # bottom rect
+    (550,114,217,15) # top rect
 ]
+# from left to right, top right, top left, bottom left, bottom right for the points of the trapezium
 polygons = [((238 + moveinx,395),(238 + moveinx,516.5),(250 + moveinx,545),(250 +  moveinx,371.5)),
             ((238 + moveinx,141.99 + 40),(238+moveinx,217+80),(250 + moveinx,272.5 + 52),(250 +  moveinx,197.5-35)),
-            (((238 + moveinx3,371.5),(238 + moveinx3,545),(250 + moveinx3, 516.5),(250 +  moveinx3, 395))),
-            ((238 + moveinx3,197.5-35),(238+moveinx3, 272.5 + 52),(250 + moveinx3,217+80),(250 +  moveinx3, 141.99 + 40)),
             ((375 + moveinx2,326-moveiny),(278+moveinx2,326-moveiny),(266+moveinx2,(324.5 - 10)-moveiny),(387 + moveinx2 ,(324.5 - 10)-moveiny)),
+            # these traps below are parallel and therefore are, bottom left, bottom right, top left, top right
+            ((238 + moveinx3,197.5-35),(238+moveinx3, 272.5 + 52),(250 + moveinx3,217+80),(250 +  moveinx3, 141.99 + 40)),
+            (((238 + moveinx3,371.5),(238 + moveinx3,545),(250 + moveinx3, 516.5),(250 +  moveinx3, 395))),
             (((387 + moveinx2,326-moveiny2),(266+moveinx2,326-moveiny2),( 278+moveinx2,(324.5 - 10)-moveiny2),( 375 + moveinx2,(324.5 - 10)-moveiny2)))
     ]
 space = pymunk.Space()
-space.damping = 0.5 # placeholder value. this is for friction.
+space.damping = 0.2 # placeholder value. this is for friction.
 # making the rigid body for the balls
 ## dynamic bodies react to collisions and can have forces acting on it.
 # make 10 of these, with center of ball being THEIR respective center.
@@ -100,6 +104,7 @@ for i in range(9):
 
 
 cueBall = Balls(cx,cy,ballNumber = 0)
+space.gravity = (0,0) # change gravity value later if this an issue. 
 #draws the other balls minus the cueball.
 def collide(arbiter,space,data):
     global hit
@@ -111,8 +116,61 @@ handlers = [space.add_collision_handler(0, i+1) for i in range(0,9)] # use this 
 for i, handler in enumerate(handlers):
     handler.begin = collide
 
-#draws the other balls as well as puts a surface over them so they can move by following the surface.
-
+#segment walls here.
+#draw the segment walls
+segment_body = pymunk.Body(body_type=pymunk.Body.STATIC)
+pymunk.pygame_util.positive_y_is_up = True # to draw it in the pymunk way whic is the way it initialises the bodies.
+'''cushion = pymunk.Segment(segment_body,(238+moveinx, 516.5), (238+moveinx,395), radius = 1)'''
+cushion = [0]*len(polygons) # initialise this so it makes sense in the code below.
+space.add(segment_body)
+for h in range(0,3):
+        if h == 0:
+            for i in range(len(polygons)):
+                #1st refers to what shape, 2nd refers to what set of coords, 3rd refers to whether its x or y
+                cushion[i] = pymunk.Segment(segment_body,(polygons[i][0][0], 720 - polygons[i][0][1]),(polygons[i][1][0], 720 - polygons[i][1][1]), radius = 1)
+                
+                if i >= 3:
+                    cushion[i] = pymunk.Segment(segment_body,(polygons[i][2][0], 720 - polygons[i][2][1]),(polygons[i][3][0],720 - polygons[i][3][1]),radius = 1)
+                
+                cushion[i].elasticity = 1 # temp value
+                space.add(cushion[i])
+        if h == 1: # adds top right to bottom right
+            for i in range(len(polygons)):
+                #1st refers to what shape, 2nd refers to what set of coords, 3rd refers to whether its x or y
+                cushion[i] = pymunk.Segment(segment_body,(polygons[i][0][0],720 - polygons[i][0][1]),(polygons[i][3][0],720 - polygons[i][3][1]), radius = 1)
+                
+                if i >= 3:
+                    cushion[i] = pymunk.Segment(segment_body,(polygons[i][3][0],720 - polygons[i][3][1]),(polygons[i][0][0],720 - polygons[i][0][1]),radius = 1)
+                
+                cushion[i].elasticity = 1 # temp value
+                space.add(cushion[i])
+        if h == 2: # adds top left to bottom left
+            for i in range(len(polygons)):
+                #1st refers to what shape, 2nd refers to what set of coords, 3rd refers to whether its x or y
+                cushion[i] = pymunk.Segment(segment_body,(polygons[i][1][0],720 - polygons[i][1][1]),(polygons[i][2][0],720 - polygons[i][2][1]), radius = 1)
+            
+                if i >= 3:
+                    cushion[i] = pymunk.Segment(segment_body,(polygons[i][2][0],720 - polygons[i][2][1]),(polygons[i][1][0],720 - polygons[i][1][1]),radius = 1)
+                
+                cushion[i].elasticity = 1 # temp value
+                space.add(cushion[i])
+#rail drawing
+rail = [0]*len(rects)
+for i in range(0,len(rail), 2):
+    #constants are to translate it in the right place. radius is 3 because this is the sweet spot for the constants to put them in accurate positions.
+    #translates them individually
+    print(i)
+    rail[i] = pymunk.Segment(segment_body,(rects[i][0] + 10,720 - rects[i][1]),(rects[i][0] + 10, 720 - (rects[i][1] + rects[i][3])),radius = 3)
+    rail[i + 1] = pymunk.Segment(segment_body,(rects[i + 1][0] + 4,720 - rects[i + 1][1]),(rects[i + 1][0] + 4,720 - (rects[i+1][1] + rects[i][3])),radius = 3)
+    if i == 2:
+        rail[i] = pymunk.Segment(segment_body,(rects[i][0],720 - (rects[i][1] - 6)),(rects[i][0] + rects[i][2],720 - (rects[i][1] - 6)),radius = 3)
+        rail[i + 1] = pymunk.Segment(segment_body,(rects[i+1][0],720 - (rects[i+1][1] + 10)),(rects[i+1][0] + rects[i+1][2],720 - (rects[i+1][1] + 10)),radius = 3)
+    
+    rail[i].elasticity = 1 # temp value
+    rail[i+1].elasticity = 1
+    space.add(rail[i])
+    space.add(rail[i +1])
+draw_options = pymunk.pygame_util.DrawOptions(screen)
 ####
 #HANDLES UPDATING EACH OF THE BALL'S MOVEMENT WHEN COLLIDED WITH
 ####
@@ -145,29 +203,11 @@ def drawOtherBalls(): # only run to change the balls/draw the balls once as the 
             ball[i].cx = displayedBall[i].center[0]
             ball[i].cy = displayedBall[i].center[1]
             ball[i].updateBodyPosition()
-        '''ball[0].cx = ball[1].center[0]
-        ball[0].cy = ball[1].center[1]
-        ball[1].cx = ball2.center[0]
-        ball[1].cy = ball2.center[1]
-        ball[2].cx = ball3.center[0]
-        ball[2].cy = ball3.center[1]
-        ball[3].cx = ball4.center[0]
-        ball[3].cy = ball4.center[1]
-        ball[4].cx = ball5.center[0]
-        ball[4].cy = ball5.center[1]
-        ball[5].cx = ball6.center[0]
-        ball[5].cy = ball6.center[1]
-        ball[6].cx = ball7.center[0]
-        ball[6].cy = ball7.center[1]
-        ball[7].cx = ball8.center[0]
-        ball[7].cy = ball8.center[1]
-        ball[8].cx = ball9.center[0]
-        ball[8].cy = ball9.center[1]'''
+        
         #initialise the individual's ball's speed
         for i in range(10):
             ball[i].velocity = pygame.math.Vector2(0,0)
-        for b in ball:
-            print(b.ballNumber, b.collisionShape.collision_type, b.body.position)
+        
        
         doOnce = False
     elif doOnce == False:
@@ -203,9 +243,6 @@ def updateBalls(drawnBalls):
     global ball
     displayedBall = [0]*10
     # update every balls cx and cy, before drawing them
-    for i in range(0,9):
-        ball[i].cx = drawnBalls[i].center[0]
-        ball[i].cy = drawnBalls[i].center[1]
     displayedBall[1]  =pygame.draw.circle(screen,"khaki1",center = (ball[0].cx,ball[0].cy), radius = radius) # number 1
     displayedBall[2] = pygame.draw.circle(screen,"blue3",center = (ball[1].cx,ball[1].cy),radius = radius) # number 2
     displayedBall[3] = pygame.draw.circle(screen,"brown1",center = (ball[2].cx,ball[2].cy),radius = radius) # number 3
@@ -236,44 +273,14 @@ def checkCollisionsWithBalls(displayedCueBall, drawnBalls):
     return changeBalls
 
 
-# checks if the cushions have been collided with by the ball.
-def checkCollisionWithPolygon(involvedBall):
-    
-    '''first element selects the specific polygon, 
-    second element selects which set of points, 
-    third element selects either x or y coordinate of the specified point'''
-    for i in range(len(polygons)):
-        'if condition is arbitrary. it could be any value of 3 as long as the list alignment adapts to it. this is because the polygons after 3 have the same y coordinates, but not the same x like the first 0-3 do.'
-        if i <= 3:
-            'first row are the coordinates for the points parallel to each other. likewise for the second'
-            
-            x1 = [polygons[i][0][0],polygons[i][2][0]] 
-            y1 = [polygons[i][0][1],polygons[i][2][1]]
-            x2 = [polygons[i][1][0],polygons[i][3][0]]
-            y2 = [polygons[i][1][1],polygons[i][3][1]]
-        if i > 3:
-            x1 = [polygons[i][0][0],polygons[i][2][0]]
-            y1 = [polygons[i][0][1],polygons[i][2][1]]
-            x2 = [polygons[i][1][0],polygons[i][3][0]]
-            y2 = [polygons[i][1][1],polygons[i][3][1]]
-        'tries to catch an exception where the involvedBall isnt a rect style object'
-        try:
-            if (len(involvedBall.clipline(x1[0],y1[0],x2[0],y2[0])) != 0) or (len(involvedBall.clipline(x1[1],y1[1],x2[1],y2[1])) != 0) or (len(involvedBall.collidelistall(rects)) != 0): # if the length of the output is 0, signalling an empty tuple
-                print("Collision has happened")
-                return True
-        except TypeError: 
-            involvedBallRect = involvedBall.get_rect()
-            if (len(involvedBall.clipline(x1[0],y1[0],x2[0],y2[0])) != 0) or (len(involvedBall.clipline(x1[1],y1[1],x2[1],y2[1])) != 0):
-                print("Collision has happened - the object was originally not a rect style object coming in")
-                return True
-    return False
+
 def drawBoard():
     # draws pool table
     #550 = x, y = 130, 210 = width, 460 = height
     pygame.draw.rect(screen, (0, 100, 0),[550,130,210,460],width = 0,border_radius = 15) #draws slate
 
     #drawing pockets because they'll be under the table outline.
-    # from left to right, top right, top left, bottom left, bottom right for the points of the trapezium
+    
     #adjust railings to accomodate new radius (original values were diameters not radii)
     #drawing pockets
     pygame.draw.circle(screen,"black",(576.88,566.5),26/1.5) # bottom left pocket
@@ -286,6 +293,7 @@ def drawBoard():
     
     pygame.draw.rect(screen, (0,0,255),[550,114,217,478],width = 15,border_radius = 15) #draws table outline
     
+    # from left to right, top right, top left, bottom left, bottom right for the points of the trapezium
     #drawing traps up and down the board.
     #this first one is between bottom right corner and mid right side 
     pygame.draw.polygon(screen,"green", points = [(238 + moveinx,395),(238 + moveinx,516.5),(250 + moveinx,545),(250 +  moveinx,371.5)])
@@ -316,7 +324,7 @@ def motionLogic(vType,massType,dx,dy,degrees):
     hit = False
     motionExists = True
     while motionExists == True:
-        conversionFactor = 2.7 # used to convert the metres to pixels.
+        conversionFactor = 100 # used to convert the metres to pixels.
         def convertValues(value, conversionFactor = conversionFactor):
             convertedValue = value * conversionFactor
             return convertedValue
@@ -336,77 +344,55 @@ def motionLogic(vType,massType,dx,dy,degrees):
         #n your sprite, define the Surface (with a transparent background) for Block.image, draw the polygon into that surface
         ##The surface alpha value is a single value that changes the transparency for the entire image. A surface alpha of 255 is opaque, and a value of 0 is completely transparent.
         ballSurface = pygame.Surface((12,12),pygame.SRCALPHA)
+        ### hand coded physics
         t = space.current_time_step + 1
         ballSurface.fill((255,255,255,0))
-        sumForce = ((massType * vType)/t)  - kineticFriction
-        a = sumForce/massType
+
+        # generate an impulse that moves the cueball depending on where you hit the cueball at.
+         # work the impulse out myself first, because this is the impulse being applied.
+        # the resulting collisions should cause the cueball to slow down due to friction and bounce back. 
+        cueBall.cx = cueBall.body.position[0]
+        cueBall.cy = 720 - cueBall.body.position[1] # otherwise the cueBall is mapped to the top of the numbered balls. 
         pygame.draw.circle(ballSurface,(255,255,255), center = (6,6), radius = 6)
-        displayedCueBall = ballSurface.get_rect(center = (cx, cy))
+        displayedCueBall = ballSurface.get_rect(center = (cueBall.cx, cueBall.cy))
         screen.blit(ballSurface, displayedCueBall,special_flags = pygame.BLEND_RGBA_MULT) 
         #initialising the variables
         
-        speed = pygame.math.Vector2(0,0)
-        displacement = pygame.math.Vector2(0,0)
-        baseDisplacement = [0,0]
-        # calculations for force variables needed for displacement and speed. 
         
-        
-        speed[0] = speed[0] + (a*t)
-        speed[1] = speed[1]   #remove the # if needed. basically, assuming kinetic friction is the gravity of a cueball, vertical is not affected by a so assume a to be 0.
-        speedMagnitude = speed.magnitude() 
-        displacement[0] =  speedMagnitude* (-dx) # x displacement. make both dx and dy negative. turn speed into a vector to make the program easier from now on.
-        displacement[1] = speedMagnitude * (-dy) # y displacement
+
+        ##handcoded physics
+
         'displayedCueBall = displayedCueBall.move(displacement)' # this moves the circle
         screen.blit(screen,(0,0))
         position = list(displayedCueBall.center) # this moves the rect form of the circle for blit to work
         screen.blit(ballSurface, position)
         drawnBalls = drawOtherBalls() # holds the get_rects, to check for collisions and move them
         drawnBallPosition = []
+        print("Ball coords are",cueBall.cx, cueBall.cy)
         for i in range(len(drawnBalls)):
             drawnBallPosition.append(drawnBalls[i])
         pygame.display.update()
-        baseDisplacement[0] = displacement[0]
-        baseDisplacement[1] = displacement[1]
-        while sumForce > kineticFriction: # this may be redundant due to space.damping acting as friction. 
-            print(speed)
-            sumForce = sumForce  - kineticFriction
-            a = sumForce/(massType)
+        
+        cueBall.body.apply_impulse_at_world_point(((-dx)*massType*vType*conversionFactor,(dy)* massType *vType*conversionFactor),(0,(720 - cy))) # -dx to make it act in the correct direction, though this body coordinate may be irrelevant.
+        
+        for x in range (100): # animation takes place over 100 frames. 
             
-            speed[0] = speed[0] + (a*t)
-            speed[1] = speed[1]   #remove the # if needed. basically, assuming kinetic friction is the gravity of a cueball, vertical is not affected by a so assume a to be 0.
-            speedMagnitude = speed.magnitude() 
-            speedMagnitude = limitVelocity(speedMagnitude)
-            displacement[0] =  int(speedMagnitude)* (-dx) # x displacement. make both dx and dy negative. turn speed into a vector to make the program easier from now on.
-            displacement[1] = int(speedMagnitude) * (-dy)
             screen.fill(backgroundColour) 
             drawBoard()
-            displayedCueBall.move_ip(displacement[0], displacement[1])
             
-            screen.blit(ballSurface, displayedCueBall) # necessary for the smooth animation. 
-            drawnBalls = updateBalls(drawnBalls)
-            pygame.display.update()
+            
+            ## hand-coded physics
             
             clock.tick(60)
             space.step(1/60)
+            
+            cueBall.cx = cueBall.body.position[0]
+            cueBall.cy = 720 - cueBall.body.position[1] # otherwise the cueBall is mapped to the top of the numbered balls. 
             #update the cue ball's new coordinates here
-            cx = displayedCueBall.center[0]
-            cy = displayedCueBall.center[1]
-            cueBall.cx = cx
-            cueBall.cy = cy
-            displayedCueBall = ballSurface.get_rect(center = (cx, cy))
-            cueBall.updateBodyPosition()
-            cueBall.body.velocity = (displacement[0], displacement[1]) 
+            displayedCueBall = ballSurface.get_rect(center = (cueBall.cx, cueBall.cy))
             
             #detect collision here, because the ball is moving here.
-            def collisionLogic():
-                if (displacement[1] - baseDisplacement[1]) > (displacement[0] - baseDisplacement[0]):
-                    displacement[1] = (-1 * displacement[1]) * dy
-                elif (displacement[0] - baseDisplacement[0]) > (displacement[1] - baseDisplacement[1]):
-                    displacement[0] = -1 * displacement[0] * dx
-                elif  (displacement[0] - baseDisplacement[0]) == (displacement[0] - baseDisplacement[0]):
-                    displacement[0] = -1 * displacement[0] * dx
-                    displacement[1] = -1 * displacement[1]  * dy
-                return displacement
+            
             collision = collide
             
             if hit == True: # base displacement is used to make the ball's current position 0,0 and everything else an offset of that. 
@@ -416,39 +402,22 @@ def motionLogic(vType,massType,dx,dy,degrees):
                 for i in range (0,9):
                     ball[i].cx = ball[i].body.position.x
                     ball[i].cy = 720  - ball[i].body.position.y
+                    ball[i].updateBodyPosition()
                 drawOtherBalls()
                 
-                '''if (displacement[1] - baseDisplacement[1]) > (displacement[0] - baseDisplacement[0]):
-                    displacement[1] = displacement[1] * (-dy)
-                elif (displacement[0] - baseDisplacement[0]) > (displacement[0] - baseDisplacement[0]):
-                    displacement[0] =  displacement[0] * (dx)
-                elif  (displacement[0] - baseDisplacement[0]) == (displacement[0] - baseDisplacement[0]):
-                    displacement[0] = displacement[0] * (-dx)
-                    displacement[1] = displacement[1] * (-dy)'''
                 
-            '''changeBalls = checkCollisionsWithBalls(displayedCueBall,drawnBalls)
-            if len(changeBalls) > 0: # to check if a collision has happened with one of the balls
-                for i in range(len(changeBalls)):
-                    ball[changeBalls[i]].velocity[0] = ball[changeBalls[i]].getVx() + ((convertValues(calculateResultantForce(convertValues(calculateKE(ballMass,vType))))/ballMass)*t) # composite function to get an acceleration (a*t) value
-                    ball[changeBalls[i]].velocity[1] = ball[changeBalls[i]].getVy() 
-                    drawnBallsMagnitude = ball[changeBalls[i]].getMagnitude()
-                    ball[changeBalls[i]].displacement[0] = ball[changeBalls[i]].velocity[0]* drawnBallsMagnitude * (-dx)
-                    ball[changeBalls[i]].displacement[1] = ball[changeBalls[i]].velocity[1] * drawnBallsMagnitude * (-dy)
-                    'drawnBalls[changeBalls[i]].displacement = collisionLogic()'
-                    drawnBalls[changeBalls[i]].move_ip(ball[changeBalls[i]].displacement[0],ball[changeBalls[i]].displacement[1])
-                    # check collisions with eachother. these are the balls that are going to move when they've been collided with
-                    changeBalls1 = checkCollisionsWithBalls(drawnBalls[changeBalls[i]], drawnBalls)
-                    for i in range(len(changeBalls1)):
-                        drawnBalls[changeBalls1[i]].move_ip(ball[changeBalls1[i]].displacement[0],ball[changeBalls1[i]].displacement[1])'''
-            
+            screen.blit(ballSurface, displayedCueBall) # necessary for the smooth animation. 
+            drawnBalls = drawOtherBalls()
+            pygame.display.update()
                 #move at the same/similar angle to when it collided. recalculate displacement here
                 # from the point it makes the collision
         ##contingency code
         '''pygame.draw.circle(screen,(255,255,255),center = displayedCueBall.center,radius = 6)
         screen.blit(displayedCueBall, displayedCueBall)
         pygame.display.update()'''
-        print("acceleration is",a)
-        print("speed is",speed)
+        # MAKE SURE TO UPDATE THIS SO THAT THE CUESTICK IS IN THE RIGHT PLACE
+        cx = cueBall.cx
+        cy = cueBall.cy 
         motionExists = False
 class Point:
         def __init__(self,x= 0, y = 0):
@@ -631,6 +600,7 @@ while running:
     pygame.draw.circle(screen,(255,255,255), center = displayedCueBall.center, radius = 6)
     #draws the numbered balls
     drawOtherBalls()
+    #space.debug_draw(draw_options) (this is for debug)
     #to move the cuestick
     moveMode()
     # flip() the display to put your work on screen
