@@ -18,6 +18,7 @@ screen = pygame.display.set_mode((1280, 720))
 clock = pygame.time.Clock()
 running = True
 rect_1 = pygame.Rect(550,114,217,478,width = 15, border_radius = 15) # rect takes (x,y,width,height)
+## for the sake of translation of board shapes.
 moveinx = 503
 moveinx2 = moveinx - 170
 moveinx3 = moveinx - 176 # for left sided traps
@@ -48,6 +49,7 @@ fastV = 4.5 * conversionFactor
 breakV = 6 * conversionFactor
 doOnce = True 
 hit = False
+## stores the coordinates for all the walls that need collision shapes (or to make certain shapes look like they have collision shapes)
 rects = [
     (550,114,15,470), #left rect
     (550+204,114,15,470), # right rect
@@ -95,23 +97,27 @@ class Balls():
     def updateBodyPosition(self):
         self.body.position = (self.cx, 720-self.cy)
     
-    
+#initialises numbered balls so they can be editted.
 ball = [Balls() for _ in range(10)]
 for i in range(9):
     ball[i].ballNumber = i + 1 # so that the numbered balls have their correct number and the cueball is just ball 0.
     ball[i].collisionShape.collision_type = i + 1
     print("Ball number is",ball[i].ballNumber, "for", i) # debug code.
 
-
+# initialises cueball so tbhey can be editted.
 cueBall = Balls(cx,cy,ballNumber = 0)
+# to make the simulation work.
 space.gravity = (0,0) # change gravity value later if this an issue. 
-#draws the other balls minus the cueball.
+
+# to check for collisions
 def collide(arbiter,space,data):
     global hit
     print("collision successful")
     hit = True
     return True
 
+
+## for multiple collisions
 handlers = [space.add_collision_handler(0, i+1) for i in range(0,9)] # use this when you need to process a collision. these collision types are placeholder values (the collision between cueball and the 1 ball)
 for i, handler in enumerate(handlers):
     handler.begin = collide
@@ -123,6 +129,7 @@ pymunk.pygame_util.positive_y_is_up = True # to draw it in the pymunk way whic i
 '''cushion = pymunk.Segment(segment_body,(238+moveinx, 516.5), (238+moveinx,395), radius = 1)'''
 cushion = [0]*len(polygons) # initialise this so it makes sense in the code below.
 space.add(segment_body)
+## adding cushions
 for h in range(0,3):
         if h == 0:
             for i in range(len(polygons)):
@@ -262,18 +269,10 @@ def updateBalls(drawnBalls):
     return drawnBalls
 # checks for a collision with each of the balls. stores the collided balls into changeBalls using the list of indexes that the function collidelistall would return.
 # this would then run some sort of motion logic to move the balls depending on the angle hit by them by the cueball (akin to how the cueball is hit by the cuestick)
-def checkCollisionsWithBalls(displayedCueBall, drawnBalls):
-    changeBalls = []
-    if len(displayedCueBall.collidelistall(drawnBalls)) != 0: # drawnBalls stores all the get_rect forms of the otherballs.
-        # looks at what circles have been collided with
-        # check for what balls have been collided with.
-        for i in range(len(displayedCueBall.collidelistall(drawnBalls))):
-            changeBalls.append(displayedCueBall.collidelistall(drawnBalls)[i])
-    
-    return changeBalls
 
 
 
+# initialises the board as a background.
 def drawBoard():
     # draws pool table
     #550 = x, y = 130, 210 = width, 460 = height
@@ -319,6 +318,7 @@ def drawBoard():
 #initialising the ball
 displayedCueBall = pygame.draw.circle(screen,(255,255,255), center = (cx,cy), radius = 6)
 
+# handles how the balls move after being hit by either the cueball or by the cuestick.
 def motionLogic(vType,massType,dx,dy,degrees):
     global hit
     hit = False
@@ -573,6 +573,7 @@ def degreesToRadians(degrees):
     radians = degrees * ((math.pi)/180)
     return radians
 
+#game loop
 while running: 
     # poll for events
     # pygame.QUIT event means the user clicked X to close your window
