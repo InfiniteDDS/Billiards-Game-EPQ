@@ -11,7 +11,9 @@ import time
 import math
 import pymunk
 import pymunk.pygame_util
+
 # pygame setup
+
 time1 = time.time() 
 pygame.init()
 screen = pygame.display.set_mode((1280, 720))
@@ -49,6 +51,7 @@ fastV = 4.5 * conversionFactor
 breakV = 6 * conversionFactor
 doOnce = True 
 hit = False
+displayedBall = [0]*9
 ## stores the coordinates for all the walls that need collision shapes (or to make certain shapes look like they have collision shapes)
 rects = [
     (550,114,15,470), #left rect
@@ -56,7 +59,12 @@ rects = [
     (550,114+470,217,15), # bottom rect
     (550,114,217,15) # top rect
 ]
+def getMousePos():
+    print(pygame.mouse.get_pos())
 # from left to right, top right, top left, bottom left, bottom right for the points of the trapezium
+
+### Pymunk Setup
+
 polygons = [((238 + moveinx,395),(238 + moveinx,516.5),(250 + moveinx,545),(250 +  moveinx,371.5)),
             ((238 + moveinx,141.99 + 40),(238+moveinx,217+80),(250 + moveinx,272.5 + 52),(250 +  moveinx,197.5-35)),
             ((375 + moveinx2,326-moveiny),(278+moveinx2,326-moveiny),(266+moveinx2,(324.5 - 10)-moveiny),(387 + moveinx2 ,(324.5 - 10)-moveiny)),
@@ -72,18 +80,20 @@ space.damping = 0.2 # placeholder value. this is for friction.
 # make 10 of these, with center of ball being THEIR respective center.
 # attach a circle collision shape to each of them.
 class Balls():
-    def __init__(self, cx = 0, cy = 0, velocity = pygame.math.Vector2(0,0), displacement = [0,0],ballNumber = 0):
+    def __init__(self, cx = 0, cy = 0, velocity = pygame.math.Vector2(0,0), displacement = [0,0],ballNumber = 0, colour = 0):
         self.cx = cx
         self.cy = cy
         self.velocity = velocity
         self.displacement = displacement
         self.ballNumber = ballNumber
+        self.colour = colour
         self.body = pymunk.Body(mass = ballMass,moment = (pymunk.moment_for_circle(ballMass,0,radius)))
         self.body.position = (self.cx,720 - self.cy) # 720 is the height of the screen, since pymunk calculates its coordinates from bottom left, while pygame does it from top left.
         self.collisionShape = pymunk.Circle(self.body, radius)
         self.collisionShape.density = 1 # may be an issue with speed of the ball.
         self.collisionShape.elasticity = 1        
         self.collisionShape.collision_type = ballNumber # so that multiple balls can have different collision logics.
+        
         space.add(self.body, self.collisionShape)
     def getMagnitude(self): # the euclidean magnitude to get a hypotenuse that can then be trig'd on to find corresponding vx and vy
         magnitude = self.velocity.magnitude()
@@ -96,6 +106,9 @@ class Balls():
         return vy
     def updateBodyPosition(self):
         self.body.position = (self.cx, 720-self.cy)
+    def getCollisionShape(self):
+        shape = self.collisionShape
+        return shape
     
 #initialises numbered balls so they can be editted.
 ball = [Balls() for _ in range(10)]
@@ -110,17 +123,44 @@ cueBall = Balls(cx,cy,ballNumber = 0)
 space.gravity = (0,0) # change gravity value later if this an issue. 
 
 # to check for collisions
-def collide(arbiter,space,data):
+def collide(arbiter,space,data): # check this
     global hit
     print("collision successful")
     hit = True
+    print("the pair of shapes collided with are:",arbiter.shapes)
+    if arbiter.shapes[1].collision_type == 10:
+        arbiter.shapes[0].body.position = (0,0)
+        x = arbiter.shapes[0].collision_type
+        space.remove(arbiter.shapes[0])
+        print("This numbered shape",x,"will be removed from displayedBall")
+        displayedBall[x - 1] = "0" 
+        print("the length of displayedBall is", len(displayedBall))
+        #assume that the location they're stored in memory is in the order of their making in their class.
+
     return True
-
-
+'''def pocketCollision(arbiter,space,data): # detects which bodies are needed, given that separate is false (made contact). 
+    pocket =  # comes out with the body of the balls 
+    print("pocket is",pocket)
+    return False'''
 ## for multiple collisions
-handlers = [space.add_collision_handler(0, i+1) for i in range(0,9)] # use this when you need to process a collision. these collision types are placeholder values (the collision between cueball and the 1 ball)
+handlers = [space.add_collision_handler(0, i+1) for i in range(0,10)] # use this when you need to process a collision.
 for i, handler in enumerate(handlers):
     handler.begin = collide
+
+for i in range(1,10):
+    handlers2 = [space.add_collision_handler(i,10) for i in range(0,10)]
+
+for i, handler in enumerate(handlers2):
+    handler.begin = collide
+
+def getShapes():
+    shapes = []
+    for i in range (0,len(displayedBall)):
+        shapes.append(ball[i].getCollisionShape)
+        print(ball[i].getCollisionShape)
+    return shapes
+
+
 
 #segment walls here.
 #draw the segment walls
@@ -161,6 +201,9 @@ for h in range(0,3):
                 
                 cushion[i].elasticity = 1 # temp value
                 space.add(cushion[i])
+
+
+
 #rail drawing
 rail = [0]*len(rects)
 for i in range(0,len(rail), 2):
@@ -177,100 +220,28 @@ for i in range(0,len(rail), 2):
     rail[i+1].elasticity = 1
     space.add(rail[i])
     space.add(rail[i +1])
+
+#pockets
+pocket_body = pymunk.Body(body_type=pymunk.Body.STATIC)
+space.add(pocket_body)
+
+def drawPockets():
+    circleCoords = [(576.88, 720 -566.5),((576.88 + 217) - 52, 720 - 566.5), (576.88 - 9,720 - (566.5 - 217)),((576.88 + 226) - 52,720 - (566.5 - 217)),(576,720 - 141.99),((576 + 217) - 52,720 - 141.99)]
+    circleRadii = [26/1.5, 24/1.5, 26.8/1.5, 26.8/1.5, 26/1.5, 24/1.5]
+    pockets = [] # or circleCoords. they're interchangeable but idk how tuples are counted
+    for i in range(0,6):
+        #pocket_body.position = (circleCoords[i][0], circleCoords[i][1])
+        pockets.append(pymunk.Circle(pocket_body,radius = circleRadii[i],offset = (circleCoords[i][0],circleCoords[i][1])))
+        pockets[i].sensor = True
+        pockets[i].collision_type = 10
+        space.add(pockets[i])
+    return pockets
+pockets = drawPockets()
+
 draw_options = pymunk.pygame_util.DrawOptions(screen)
-####
-#HANDLES UPDATING EACH OF THE BALL'S MOVEMENT WHEN COLLIDED WITH
-####
-def drawOtherBalls(): # only run to change the balls/draw the balls once as the images need to be drawn over them every time this is ran.
-    #initialising local variables
-    global ball
-    global doOnce
-    global hit
-    radius = 6
-    displayedBall = [0]*9
-    if doOnce == True:
-        cy = 326 + 142.24
-        cx = 550+105 # issue could appear here where the balls don't move.
-        tby = 8 # translate by to make them all diagonal to oneanother.
-        
-        
-
-        #drawing the balls
-        displayedBall[0] = pygame.draw.circle(screen,"khaki1",center = (cx,cy), radius = radius) # number 1
-        displayedBall[1] = pygame.draw.circle(screen,"blue3",center = (cx - tby,cy + tby),radius = radius) # number 2
-        displayedBall[2] = pygame.draw.circle(screen,"brown1",center = (cx+tby,cy+tby),radius = radius) # number 3
-        displayedBall[3] = pygame.draw.circle(screen,"blue4",center = (cx - (2*tby), cy + (2*tby)),radius = radius) # number 4
-        displayedBall[8] = pygame.draw.circle(screen, "gold",center = (cx, cy + (2*tby)),radius = radius) # number 9
-        displayedBall[4] = pygame.draw.circle(screen,"orangered1",center = (cx + (2*tby), cy + (2*tby)), radius = radius) # number 5
-        displayedBall[5] = pygame.draw.circle(screen, "palegreen4",center = (cx - (tby), cy + (3*tby)),radius = radius) # number 6
-        displayedBall[6] = pygame.draw.circle(screen, "red4",center = (cx + (tby), cy + (3*tby)),radius = radius)# number 7
-        displayedBall[7] = pygame.draw.circle(screen,"black",center = (cx, cy + (4*tby)),radius = radius) # number 8
-        for i in range(0,9):
-            # cx and cy transfers this coordinates to either the updating state (to ensure they move) or the displaying state (to ensure they're being drawn).
-            ball[i].cx = displayedBall[i].center[0]
-            ball[i].cy = displayedBall[i].center[1]
-            ball[i].updateBodyPosition()
-        
-        #initialise the individual's ball's speed
-        for i in range(10):
-            ball[i].velocity = pygame.math.Vector2(0,0)
-        
-       
-        doOnce = False
-    elif doOnce == False:
-        displayedBall[0]  =pygame.draw.circle(screen,"khaki1",center = (ball[0].cx,ball[0].cy), radius = radius) # number 1
-        displayedBall[1] = pygame.draw.circle(screen,"blue3",center = (ball[1].cx,ball[1].cy),radius = radius) # number 2
-        displayedBall[2] = pygame.draw.circle(screen,"brown1",center = (ball[2].cx,ball[2].cy),radius = radius) # number 3
-        displayedBall[3] = pygame.draw.circle(screen,"blue4",center = (ball[3].cx, ball[3].cy),radius = radius) # number 4
-        displayedBall[8] = pygame.draw.circle(screen, "gold",center = (ball[8].cx, ball[8].cy),radius = radius) # number 9
-        displayedBall[4] = pygame.draw.circle(screen,"orangered1",center = (ball[4].cx, ball[4].cy), radius = radius) # number 5
-        displayedBall[5] = pygame.draw.circle(screen, "palegreen4",center = (ball[5].cx, ball[5].cy),radius = radius) # number 6
-        displayedBall[6] = pygame.draw.circle(screen, "red4",center = (ball[6].cx, ball[6].cy),radius = radius)# number 7
-        displayedBall[7] = pygame.draw.circle(screen,"black",center = (ball[7].cx, ball[7].cy),radius = radius) # number 8
-    if hit == False:
-        for i in range(0,9):
-            ball[i].updateBodyPosition()
-    # balls = the surface version of each of these balls.
-    # drawnballs is the drawn version of these balls.
-    balls = [0, 0, 0, 0, 0, 0, 0,0,0]
-    drawnBalls = [displayedBall[0],displayedBall[1],displayedBall[2],displayedBall[3],displayedBall[4],displayedBall[5],displayedBall[6],displayedBall[7],displayedBall[8]]
-    for i in range(len(balls)):
-        balls[i] = pygame.Surface((12,12),pygame.SRCALPHA)
-        balls[i].fill((255,255,255,0))
-        drawnBalls[i] = balls[i].get_rect(center = drawnBalls[i].center)
-        screen.blit(balls[i], drawnBalls[i],special_flags = pygame.BLEND_RGBA_MULT)
-        
-    
-    return drawnBalls
-
-####### 
-#REDUNDANT MODULE. ONLY USED FOR THE OLD RECOMPUTING OF CENTERS WHEN THE BALL IS MOVING.
-#######
-def updateBalls(drawnBalls):
-    global ball
-    displayedBall = [0]*10
-    # update every balls cx and cy, before drawing them
-    displayedBall[1]  =pygame.draw.circle(screen,"khaki1",center = (ball[0].cx,ball[0].cy), radius = radius) # number 1
-    displayedBall[2] = pygame.draw.circle(screen,"blue3",center = (ball[1].cx,ball[1].cy),radius = radius) # number 2
-    displayedBall[3] = pygame.draw.circle(screen,"brown1",center = (ball[2].cx,ball[2].cy),radius = radius) # number 3
-    displayedBall[4] = pygame.draw.circle(screen,"blue4",center = (ball[3].cx, ball[3].cy),radius = radius) # number 4
-    displayedBall[9] = pygame.draw.circle(screen, "gold",center = (ball[8].cx, ball[8].cy),radius = radius) # number 9
-    displayedBall[5] = pygame.draw.circle(screen,"orangered1",center = (ball[4].cx, ball[4].cy), radius = radius) # number 5
-    displayedBall[6] = pygame.draw.circle(screen, "palegreen4",center = (ball[5].cx, ball[5].cy),radius = radius) # number 6
-    displayedBall[7] = pygame.draw.circle(screen, "red4",center = (ball[6].cx, ball[6].cy),radius = radius)# number 7
-    displayedBall[8] = pygame.draw.circle(screen,"black",center = (ball[7].cx, ball[7].cy),radius = radius) # number 8
-    balls = [0, 0, 0, 0, 0, 0, 0,0,0]
-    drawnBalls = [displayedBall[1],displayedBall[2],displayedBall[3],displayedBall[4],displayedBall[5],displayedBall[6],displayedBall[7],displayedBall[8],displayedBall[9]] # potential error here where the 9 ball gets overlayed by the other balls.
-    for i in range(len(balls)):
-        balls[i] = pygame.Surface((12,12),pygame.SRCALPHA)
-        balls[i].fill((255,255,255,0))
-        drawnBalls[i] = balls[i].get_rect(center = drawnBalls[i].center)
-        screen.blit(balls[i], drawnBalls[i],special_flags = pygame.BLEND_RGBA_MULT)
-    return drawnBalls
-# checks for a collision with each of the balls. stores the collided balls into changeBalls using the list of indexes that the function collidelistall would return.
-# this would then run some sort of motion logic to move the balls depending on the angle hit by them by the cueball (akin to how the cueball is hit by the cuestick)
 
 
+### Everything related to rendering something is here. (minus cuestick)
 
 # initialises the board as a background.
 def drawBoard():
@@ -308,12 +279,113 @@ def drawBoard():
     #parallel to third trap
     pygame.draw.polygon(screen,"green", points = [(387 + moveinx2,326-moveiny2),(266+moveinx2,326-moveiny2),( 278+moveinx2,(324.5 - 10)-moveiny2),( 375 + moveinx2,(324.5 - 10)-moveiny2)])
 
+    drawBallPocketTracker()
 
+
+####
+#HANDLES UPDATING EACH OF THE BALL'S MOVEMENT WHEN COLLIDED WITH
+####
+def drawOtherBalls(): # only run to change the balls/draw the balls once as the images need to be drawn over them every time this is ran.
+    #initialising local variables
+    global ball
+    global doOnce
+    global hit
+    global displayedBall
+    radius = 6
+    colours = ["khaki1","blue3","brown1","blue4","orangered1","palegreen4","red4","black","gold"]
+    if doOnce == True:
+        cy = 326 + 142.24
+        cx = 550+105 # issue could appear here where the balls don't move.
+        tby = 8 # translate by to make them all diagonal to oneanother.
+        
+        
+
+        #drawing the balls
+        displayedBall[0] = pygame.draw.circle(screen,"khaki1",center = (cx,cy), radius = radius) # number 1
+        displayedBall[1] = pygame.draw.circle(screen,"blue3",center = (cx - tby,cy + tby),radius = radius) # number 2
+        displayedBall[2] = pygame.draw.circle(screen,"brown1",center = (cx+tby,cy+tby),radius = radius) # number 3
+        displayedBall[3] = pygame.draw.circle(screen,"blue4",center = (cx - (2*tby), cy + (2*tby)),radius = radius) # number 4
+        displayedBall[8] = pygame.draw.circle(screen, "gold",center = (cx, cy + (2*tby)),radius = radius) # number 9
+        displayedBall[4] = pygame.draw.circle(screen,"orangered1",center = (cx + (2*tby), cy + (2*tby)), radius = radius) # number 5
+        displayedBall[5] = pygame.draw.circle(screen, "palegreen4",center = (cx - (tby), cy + (3*tby)),radius = radius) # number 6
+        displayedBall[6] = pygame.draw.circle(screen, "red4",center = (cx + (tby), cy + (3*tby)),radius = radius)# number 7
+        displayedBall[7] = pygame.draw.circle(screen,"black",center = (cx, cy + (4*tby)),radius = radius) # number 8
+        for i in range(0,9):
+            # cx and cy transfers this coordinates to either the updating state (to ensure they move) or the displaying state (to ensure they're being drawn).
+            ball[i].cx = displayedBall[i].center[0]
+            ball[i].cy = displayedBall[i].center[1]
+            ball[i].colour = colours[i]
+            ball[i].updateBodyPosition()
+        
+        #initialise the individual's ball's speed
+        for i in range(10):
+            ball[i].velocity = pygame.math.Vector2(0,0)
+        
+       
+        doOnce = False
+    elif doOnce == False:
+        
+        for i in range(0,len(displayedBall)):
+            displayedBall[i]  =pygame.draw.circle(screen,ball[i].colour,center = (ball[i].cx,ball[i].cy), radius = radius) # number 1
+            '''displayedBall[1] = pygame.draw.circle(screen,"blue3",center = (ball[1].cx,ball[1].cy),radius = radius) # number 2
+            displayedBall[2] = pygame.draw.circle(screen,"brown1",center = (ball[2].cx,ball[2].cy),radius = radius) # number 3
+            displayedBall[3] = pygame.draw.circle(screen,"blue4",center = (ball[3].cx, ball[3].cy),radius = radius) # number 4
+            displayedBall[8] = pygame.draw.circle(screen, "gold",center = (ball[8].cx, ball[8].cy),radius = radius) # number 9
+            displayedBall[4] = pygame.draw.circle(screen,"orangered1",center = (ball[4].cx, ball[4].cy), radius = radius) # number 5
+            displayedBall[5] = pygame.draw.circle(screen, "palegreen4",center = (ball[5].cx, ball[5].cy),radius = radius) # number 6
+            displayedBall[6] = pygame.draw.circle(screen, "red4",center = (ball[6].cx, ball[6].cy),radius = radius)# number 7
+            displayedBall[7] = pygame.draw.circle(screen,"black",center = (ball[7].cx, ball[7].cy),radius = radius) # number 8'''
+    if hit == False:
+        for i in range(0,len(displayedBall)):
+            ball[i].updateBodyPosition()
+    # balls = the surface version of each of these balls.
+    # drawnballs is the drawn version of these balls.
+    balls = [0]*len(displayedBall)
+    drawnBalls = []
+    for i in range(0,len(displayedBall)):
+        drawnBalls.append(displayedBall[i])
+    for i in range(len(balls)):
+        balls[i] = pygame.Surface((12,12),pygame.SRCALPHA)
+        balls[i].fill((255,255,255,0))
+        drawnBalls[i] = balls[i].get_rect(center = drawnBalls[i].center)
+        screen.blit(balls[i], drawnBalls[i],special_flags = pygame.BLEND_RGBA_MULT)
+        
     
-    
-#speed of ball
- # speed in x, speed in y
-'think about using classes for individual balls'
+    return drawnBalls
+
+
+
+
+
+def drawBallPocketTracker():
+        width = 1280-776
+        height = 720-665
+        rectX = 776
+        rectY = 665
+        cx = 802
+        cy = 694
+        
+        pocketedBalls = []
+        'to distribute them evenly, assume 9 to 18 pixel spacing (subtract 9 from a version of width and height thats divisible by 9) and divide by 9'
+        pygame.draw.rect(screen,"brown",[rectX,rectY,width,height],width = 0) 
+        for i in range(1,10):
+            #pygame.draw.circle(screen, (0,0,0), ((776+(55*i)),(665+(72*i))),radius) 
+            pygame.draw.circle(screen,"grey", ((cx) + (i*50),cy), radius *3)
+            pocketedBalls.append(((cx) + i*50, cy))
+        #search for the balls that need to be displayed here.
+        if doOnce == False:
+            pygame.draw.rect(screen,"brown",[rectX,rectY,width,height],width = 0) 
+            for i in range(0,9):
+                if displayedBall[i].center[0] <= 0 and displayedBall[i].center[1] <= 0:
+                    pygame.draw.circle(screen, ball[i].colour, (pocketedBalls[i][0],pocketedBalls[i][1]),radius * 3)
+                    print("THIS SECTION HAS BEEN RAN")
+                else:
+                    pygame.draw.circle(screen,"grey",(pocketedBalls[i][0], pocketedBalls[i][1]),radius*3) 
+        
+
+###
+#Physics related section
+###
 
 #initialising the ball
 displayedCueBall = pygame.draw.circle(screen,(255,255,255), center = (cx,cy), radius = 6)
@@ -323,6 +395,7 @@ def motionLogic(vType,massType,dx,dy,degrees):
     global hit
     hit = False
     motionExists = True
+    print("displayedBall is", displayedBall)
     while motionExists == True:
         conversionFactor = 100 # used to convert the metres to pixels.
         def convertValues(value, conversionFactor = conversionFactor):
@@ -374,9 +447,21 @@ def motionLogic(vType,massType,dx,dy,degrees):
         pygame.display.update()
         
         cueBall.body.apply_impulse_at_world_point(((-dx)*massType*vType*conversionFactor,(dy)* massType *vType*conversionFactor),(0,(720 - cy))) # -dx to make it act in the correct direction, though this body coordinate may be irrelevant.
-        
+        pocketedBalls = []
+        pocketTheseBalls = [] # change the names of these
+        for i in range(0,len(pockets)):
+            pocketedBalls.append(space.shape_query(pockets[i]))
         for x in range (100): # animation takes place over 100 frames. 
+
+            #detect the collision between pockets and balls
             
+            for i in range(0,len(pocketedBalls)):
+                if pocketedBalls[i] != None:
+                    pocketTheseBalls.append(pocketedBalls[i])
+                    pocketIt= pocketTheseBalls[i][0].contact_point_set
+                    if pocketIt.points[0].distance < 0:
+                        pass
+                
             screen.fill(backgroundColour) 
             drawBoard()
             
@@ -394,21 +479,33 @@ def motionLogic(vType,massType,dx,dy,degrees):
             #detect collision here, because the ball is moving here.
             
             collision = collide
+            # detect if its collided with a pocket
+            # have the pockets have their collision IGNORED.When they're ignored, their distance in contactPoint is negative. If this value is negative, a collision has happened
+            #Then, delete the ball that has had their collision ignored by the ball.
             
             if hit == True: # base displacement is used to make the ball's current position 0,0 and everything else an offset of that. 
                 # the balls should each follow the coordinates of their body position
                 # the balls should move in the way that pymunk wants them to.
                 #PYMUNK IS HANDLING THE MOVEMENT OF THE BALLS BY TYING THE BODY POSITION TO THE BALL'S MOVEMENT COORDINATES. 720 IS USED AS THE Y AXIS OF THE RESOLUTION.
-                for i in range (0,9):
+                for i in range (0,len(displayedBall)):
                     ball[i].cx = ball[i].body.position.x
                     ball[i].cy = 720  - ball[i].body.position.y
                     ball[i].updateBodyPosition()
                 drawOtherBalls()
+            '''if len(pocketBall) > 0:
                 
+                # get rid of the ball that's been pocketed and track what ball it is.'''
+
                 
             screen.blit(ballSurface, displayedCueBall) # necessary for the smooth animation. 
             drawnBalls = drawOtherBalls()
             pygame.display.update()
+            #check if any of the balls have been pocketed.
+
+            
+
+
+
                 #move at the same/similar angle to when it collided. recalculate displacement here
                 # from the point it makes the collision
         ##contingency code
@@ -419,6 +516,7 @@ def motionLogic(vType,massType,dx,dy,degrees):
         cx = cueBall.cx
         cy = cueBall.cy 
         motionExists = False
+        print(len(pocketedBalls))
 class Point:
         def __init__(self,x= 0, y = 0):
             self.x = x
@@ -442,15 +540,13 @@ def moveMode():
     v = [Point() for _ in range(4)]
     ## get pos, gets position of mouse pointer on screen. [1] = y, [0] = x. access each as you would with a list type.
     pos = pygame.mouse.get_pos()
+    degrees = pos[1]
     # as the user moves their mouse up or down, the more they increase or decrease degrees up to a max of 360 and a minimum of 0
-    if pos[1] > 360:
-        degrees = pos[1]/360
     
-    elif pos[1] <= 360:
-        degrees = pos[1]
     #for the sake of ease when copying and pasting this guy's code (guy on stackoverflow)
     dx = math.sin(degreesToRadians(degrees))
     dy = math.cos(degreesToRadians(degrees))
+    
     if pygame.mouse.get_pressed()[0]:
         ## making the cue stick acting along the gradient of the circle's center and the points of its edge
         
@@ -601,10 +697,15 @@ while running:
     pygame.draw.circle(screen,(255,255,255), center = displayedCueBall.center, radius = 6)
     #draws the numbered balls
     drawOtherBalls()
-    #space.debug_draw(draw_options) (this is for debug)
+    space.debug_draw(draw_options) #(this is for debug)
     #to move the cuestick
     moveMode()
     # flip() the display to put your work on screen
+    #getMousePos() # debug only
+    
+    #draws the display to track which balls have been pocketed. (turn into a subroutine that takes a parameter of numberedBalls that colours in the ball that's been pocketed
+    
+    
     
     pygame.display.flip()
 
