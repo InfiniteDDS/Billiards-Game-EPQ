@@ -52,6 +52,9 @@ breakV = 6 * conversionFactor
 doOnce = True 
 hit = False
 displayedBall = [0]*9
+cueBallPocketed = False
+cueBallPlaced = False
+foul = False 
 ## stores the coordinates for all the walls that need collision shapes (or to make certain shapes look like they have collision shapes)
 rects = [
     (550,114,15,470), #left rect
@@ -125,16 +128,21 @@ space.gravity = (0,0) # change gravity value later if this an issue.
 # to check for collisions
 def collide(arbiter,space,data): # check this
     global hit
+    global cueBallPocketed
     print("collision successful")
     hit = True
     print("the pair of shapes collided with are:",arbiter.shapes)
-    if arbiter.shapes[1].collision_type == 10:
-        arbiter.shapes[0].body.position = (0,0)
+    if arbiter.shapes[1].collision_type == 10: # only in the case of a collision with the pockets.
+        arbiter.shapes[0].body.position = (5000,5000)
         x = arbiter.shapes[0].collision_type
-        space.remove(arbiter.shapes[0])
+        #space.remove(arbiter.shapes[0])
         print("This numbered shape",x,"will be removed from displayedBall")
-        displayedBall[x - 1] = "0" 
-        print("the length of displayedBall is", len(displayedBall))
+        if x != 0: # collision type 0 is the cueball, which isn't included in the displayedBall array
+            displayedBall[x - 1] = "pocketed"
+        if x == 0:
+            cueBallPocketed = True
+        
+        print("the length of displayedBall is", len(displayedBall)) # debug code
         #assume that the location they're stored in memory is in the order of their making in their class.
 
     return True
@@ -147,6 +155,7 @@ handlers = [space.add_collision_handler(0, i+1) for i in range(0,10)] # use this
 for i, handler in enumerate(handlers):
     handler.begin = collide
 
+#to allow the other balls to be pocketed besides the cueball. where cueball has collision handler 0.
 for i in range(1,10):
     handlers2 = [space.add_collision_handler(i,10) for i in range(0,10)]
 
@@ -295,7 +304,7 @@ def drawOtherBalls(): # only run to change the balls/draw the balls once as the 
     colours = ["khaki1","blue3","brown1","blue4","orangered1","palegreen4","red4","black","gold"]
     if doOnce == True:
         cy = 326 + 142.24
-        cx = 550+105 # issue could appear here where the balls don't move.
+        cx = 550+105 # issue could appear here where the balls don't move. (this is fixed by doOnce)
         tby = 8 # translate by to make them all diagonal to oneanother.
         
         
@@ -326,15 +335,9 @@ def drawOtherBalls(): # only run to change the balls/draw the balls once as the 
     elif doOnce == False:
         
         for i in range(0,len(displayedBall)):
-            displayedBall[i]  =pygame.draw.circle(screen,ball[i].colour,center = (ball[i].cx,ball[i].cy), radius = radius) # number 1
-            '''displayedBall[1] = pygame.draw.circle(screen,"blue3",center = (ball[1].cx,ball[1].cy),radius = radius) # number 2
-            displayedBall[2] = pygame.draw.circle(screen,"brown1",center = (ball[2].cx,ball[2].cy),radius = radius) # number 3
-            displayedBall[3] = pygame.draw.circle(screen,"blue4",center = (ball[3].cx, ball[3].cy),radius = radius) # number 4
-            displayedBall[8] = pygame.draw.circle(screen, "gold",center = (ball[8].cx, ball[8].cy),radius = radius) # number 9
-            displayedBall[4] = pygame.draw.circle(screen,"orangered1",center = (ball[4].cx, ball[4].cy), radius = radius) # number 5
-            displayedBall[5] = pygame.draw.circle(screen, "palegreen4",center = (ball[5].cx, ball[5].cy),radius = radius) # number 6
-            displayedBall[6] = pygame.draw.circle(screen, "red4",center = (ball[6].cx, ball[6].cy),radius = radius)# number 7
-            displayedBall[7] = pygame.draw.circle(screen,"black",center = (ball[7].cx, ball[7].cy),radius = radius) # number 8'''
+            if displayedBall[i] != "pocketed":
+                displayedBall[i]  = pygame.draw.circle(screen,ball[i].colour,center = (ball[i].cx,ball[i].cy), radius = radius) # number 1
+            
     if hit == False:
         for i in range(0,len(displayedBall)):
             ball[i].updateBodyPosition()
@@ -347,8 +350,9 @@ def drawOtherBalls(): # only run to change the balls/draw the balls once as the 
     for i in range(len(balls)):
         balls[i] = pygame.Surface((12,12),pygame.SRCALPHA)
         balls[i].fill((255,255,255,0))
-        drawnBalls[i] = balls[i].get_rect(center = drawnBalls[i].center)
-        screen.blit(balls[i], drawnBalls[i],special_flags = pygame.BLEND_RGBA_MULT)
+        if displayedBall[i] != "pocketed":
+            drawnBalls[i] = balls[i].get_rect(center = drawnBalls[i].center)
+            screen.blit(balls[i], drawnBalls[i],special_flags = pygame.BLEND_RGBA_MULT)
         
     
     return drawnBalls
@@ -362,7 +366,7 @@ def drawBallPocketTracker():
         height = 720-665
         rectX = 776
         rectY = 665
-        cx = 802
+        cx = 802 # has no effect on the cx cy used for the cueball. this is used to create the circles to be filled in to signify pocketed balls.
         cy = 694
         
         pocketedBalls = []
@@ -376,7 +380,7 @@ def drawBallPocketTracker():
         if doOnce == False:
             pygame.draw.rect(screen,"brown",[rectX,rectY,width,height],width = 0) 
             for i in range(0,9):
-                if displayedBall[i].center[0] <= 0 and displayedBall[i].center[1] <= 0:
+                if displayedBall[i] == "pocketed":
                     pygame.draw.circle(screen, ball[i].colour, (pocketedBalls[i][0],pocketedBalls[i][1]),radius * 3)
                     print("THIS SECTION HAS BEEN RAN")
                 else:
@@ -387,12 +391,15 @@ def drawBallPocketTracker():
 #Physics related section
 ###
 
-#initialising the ball
+#initialising the ball - initialised cause i dont want to turn a local variable into a global variable for a subroutine that will just return true or false.
 displayedCueBall = pygame.draw.circle(screen,(255,255,255), center = (cx,cy), radius = 6)
 
 # handles how the balls move after being hit by either the cueball or by the cuestick.
 def motionLogic(vType,massType,dx,dy,degrees):
     global hit
+    global cx
+    global cy
+    global displayedCueBall
     hit = False
     motionExists = True
     print("displayedBall is", displayedBall)
@@ -411,9 +418,7 @@ def motionLogic(vType,massType,dx,dy,degrees):
             elif speed < max_speed:
                 speed = speed
                 return speed
-        global cx
-        global cy
-        global displayedCueBall
+        
         #n your sprite, define the Surface (with a transparent background) for Block.image, draw the polygon into that surface
         ##The surface alpha value is a single value that changes the transparency for the entire image. A surface alpha of 255 is opaque, and a value of 0 is completely transparent.
         ballSurface = pygame.Surface((12,12),pygame.SRCALPHA)
@@ -524,7 +529,47 @@ class Point:
 # creating a class for the ball physics logic
 
 
+### game stuff
+def gameOverCheck(): # might change this to rule check.
+    global cueBallPocketed
+    global foul
+    pocket = 0
 
+    # to check for a scratch foul
+    if cueBallPocketed == True:
+        cueBallPocketed = False
+        foul = True
+
+    
+    # to check if the game has been won.
+    elif cueBallPocketed == False:
+        for i in range (0,9):
+            if displayedBall[i] == "pocketed":
+                pocket = pocket +1
+            if pocket == 9: # to determine if every ball has been pocketed
+                gameRestart()
+def gameRestart():
+    # what variables need to change
+    global doOnce
+    global cx
+    global cy
+    global displayedCueBall
+    global cueBallPlaced
+
+    #variable setting
+    cx = 550 + 105 # centre of circle x coordinate
+    cy = 130 + 112 # centre of circle y coordinate
+    cueBall.cx = cx
+    cueBall.cy = cy
+    cueBall.updateBodyPosition()
+    doOnce = True
+    cueBallPlaced = False
+
+    #drawing
+    drawBoard()
+    displayedCueBall = pygame.draw.circle(screen,(255,255,255), center = (cx,cy), radius = 6)
+    pygame.draw.circle(screen,(255,255,255), center = displayedCueBall.center, radius = 6)
+    drawOtherBalls()
 ## creating a move mode
 ### if left mouse button hasn't been pressed, then move mode is passed.
 def moveMode():
@@ -669,6 +714,93 @@ def degreesToRadians(degrees):
     radians = degrees * ((math.pi)/180)
     return radians
 
+
+def moveCueBall(pos,firstTime):
+    ballSurface = pygame.Surface((12,12),pygame.SRCALPHA)
+    ballSurface.fill((255,255,255,0))
+    cueBall.cx = pos[0]
+    
+    
+    if firstTime == True:
+        cueBall.cy = (130+112.75)
+        if cueBall.cx < 580:
+            cueBall.cx = cueBall.cx - (cueBall.cx - 580)
+        elif cueBall.cx > (520+210):
+            cueBall.cx = cueBall.cx - (cueBall.cx - (520+210)) 
+    if firstTime == False:
+        cueBall.cy = pos[1]
+        if cueBall.cx < 595:
+            cueBall.cx = cueBall.cx - (cueBall.cx - 590)
+        elif cueBall.cx > (520+190):
+            cueBall.cx = cueBall.cx - (cueBall.cx - (520+190)) 
+        
+        # for the y conditions. 
+        if cueBall.cy < (150):
+            cueBall.cy = cueBall.cy - (cueBall.cy - (150))
+        elif cueBall.cy > (535): 
+            cueBall.cy = cueBall.cy - (cueBall.cy - (535))
+
+        # for the balls (WIP)
+        for i in range(0,9):
+            if cueBall.cx == ball[i].cx:
+                cueBall.cx = cueBall.cx - (cueBall.cx - (ball[i].cx))
+            if cueBall.cy == ball[i].cy:
+                cueBall.cy = cueBall.cy - (cueBall.cy - (ball[i].cy))
+    # these lines of code cause the balls to flash but not the board to flash.
+    pygame.draw.circle(ballSurface,(255,255,255), center = (6,6), radius = 6)
+    displayedCueBall = ballSurface.get_rect(center = (cueBall.cx, cueBall.cy))
+    screen.blit(ballSurface, displayedCueBall,special_flags = pygame.BLEND_RGBA_MULT)
+    screen.blit(screen,(0,0))
+    position = list(displayedCueBall.center) # this moves the rect form of the circle for blit to work
+    screen.blit(ballSurface, position)
+    pygame.display.update()
+
+# used at the start of a game to move the ball around the headstring. 
+def setupCueBall():
+    global cx
+    global cy
+    global cueBallPlaced 
+    global displayedCueBall
+    pos = pygame.mouse.get_pos()
+    if pygame.mouse.get_pressed()[0] == False:
+        # code to move the ball.
+        moveCueBall(pos,firstTime = True)
+    if pygame.mouse.get_pressed()[0] == True:
+        # displayedCueBall is the initial position of the cueBall. 
+        displayedCueBall = pygame.draw.circle(screen,(255,255,255), center = (cueBall.cx +  radius ,cueBall.cy + radius), radius = 6)
+        cx = cueBall.cx + radius # have to offset by the radius because this code is moving the center.
+        cy = cueBall.cy + radius
+
+        # so that the impulse isn't applied to the wrong point
+        cueBall.cx = cueBall.cx + radius
+        cueBall.cy = cueBall.cy + radius
+        cueBall.updateBodyPosition() # so the motion logic works (transfers from pygame to pymunk well)
+        cueBallPlaced = True
+
+# use this when a player fouls.
+def placeCueBall(): # identical to setup cueBall except this is used when a player fouls. 
+    global cx
+    global cy
+    global cueBallPlaced 
+    global displayedCueBall
+    global foul
+    pos = pygame.mouse.get_pos()
+    if pygame.mouse.get_pressed()[0] == False:
+        moveCueBall(pos,firstTime = False)
+    if pygame.mouse.get_pressed()[0] == True:
+        cueBallPlacedPostStart = True
+        # displayedCueBall is the initial position of the cueBall. 
+        displayedCueBall = pygame.draw.circle(screen,(255,255,255), center = (cueBall.cx +  radius ,cueBall.cy + radius), radius = 6)
+        cx = cueBall.cx + radius # have to offset by the radius because this code is moving the center.
+        cy = cueBall.cy + radius
+
+        # so that the impulse isn't applied to the wrong point
+        cueBall.cx = cueBall.cx + radius
+        cueBall.cy = cueBall.cy + radius
+        cueBall.updateBodyPosition() # so the motion logic works (transfers from pygame to pymunk well)
+        foul = False
+
+
 #game loop
 while running: 
     # poll for events
@@ -694,16 +826,22 @@ while running:
     # draws the board complete with pockets, rails and cushions
     drawBoard()
     #draws the balls
-    pygame.draw.circle(screen,(255,255,255), center = displayedCueBall.center, radius = 6)
+    if cueBallPlaced == False:
+        setupCueBall()
+    if foul == True:
+        placeCueBall()
     #draws the numbered balls
     drawOtherBalls()
-    space.debug_draw(draw_options) #(this is for debug)
+    #space.debug_draw(draw_options) #(this is for debug)
+    getMousePos() # debug only
     #to move the cuestick
-    moveMode()
-    # flip() the display to put your work on screen
-    #getMousePos() # debug only
+    if cueBallPlaced == True and foul == False:
+        pygame.draw.circle(screen,(255,255,255), center = displayedCueBall.center, radius = 6)
+        moveMode()
+        # flip() the display to put your work on screen
     
-    #draws the display to track which balls have been pocketed. (turn into a subroutine that takes a parameter of numberedBalls that colours in the ball that's been pocketed
+        gameOverCheck() 
+        #draws the display to track which balls have been pocketed. (turn into a subroutine that takes a parameter of numberedBalls that colours in the ball that's been pocketed
     
     
     
