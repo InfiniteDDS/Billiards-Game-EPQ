@@ -12,6 +12,8 @@ This is a playable billiards game using python + pygame and pymunk with nine-bal
 ![til](https://github.com/InfiniteDDS/Billiards-Game-EPQ/blob/main/image2.gif)
 ### Prototype 2
 ![til](https://github.com/InfiniteDDS/Billiards-Game-EPQ/blob/main/image1.gif)
+### Prototype 3
+![til](https://github.com/InfiniteDDS/Billiards-Game-EPQ/blob/main/prototype3.gif)
 ## Overview
 ### Requirements
 - Python + pygame and pymunk installed (TBC)
@@ -24,8 +26,8 @@ Then, when you’ve decided on the desired power, release the right mouse button
 You will not be able to hit the cue-ball until the cue-ball has finished its motion
 
 ### Issues
-One collision pair affects every ball (minus the cue ball). 
-The rail and the cushion cannot be collided with yet.
+The ball may move too fast, low power is needed to get somewhat good control.
+The balls aren't being pocketed, and there are no nine-ball pool rules.
 
 
 
