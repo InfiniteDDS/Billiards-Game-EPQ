@@ -27,7 +27,7 @@ moveinx3 = moveinx - 176 # for left sided traps
 moveiny = 185
 moveiny2 = -250 # for bottom sided traps
 #initialise variables
-backgroundColour = "purple" # edit this value to change screen.fill
+backgroundColour = "grey" # edit this value to change screen.fill
 count = 0 
 cx = 550 + 105 # centre of circle x coordinate
 cy = 130 + 112 # centre of circle y coordinate
@@ -266,6 +266,7 @@ draw_options = pymunk.pygame_util.DrawOptions(screen)
 
 # initialises the board as a background.
 def drawBoard():
+    
     # draws pool table
     #550 = x, y = 130, 210 = width, 460 = height
     pygame.draw.rect(screen, (0, 100, 0),[550,130,210,460],width = 0,border_radius = 15) #draws slate
@@ -282,23 +283,23 @@ def drawBoard():
     pygame.draw.circle(screen,"black",((576 + 217) - 52,141.99),24/1.5) # top right pocket
 
     
-    pygame.draw.rect(screen, (0,0,255),[550,114,217,478],width = 15,border_radius = 15) #draws table outline
+    pygame.draw.rect(screen, (125, 88, 57),[550,114,217,478],width = 15,border_radius = 15) #draws table outline
     
     # from left to right, top right, top left, bottom left, bottom right for the points of the trapezium
     #drawing traps up and down the board.
     #this first one is between bottom right corner and mid right side 
-    pygame.draw.polygon(screen,"green", points = [(238 + moveinx,395),(238 + moveinx,516.5),(250 + moveinx,545),(250 +  moveinx,371.5)])
+    pygame.draw.polygon(screen,(125, 88, 57), points = [(238 + moveinx,395),(238 + moveinx,516.5),(250 + moveinx,545),(250 +  moveinx,371.5)])
     #second trap, between mid right side and top right + move in x keeps the alignment with the first trap in the x axis. 
-    pygame.draw.polygon(screen,"green", points = [(238 + moveinx,141.99 + 40),(238+moveinx,217+80),(250 + moveinx,272.5 + 52),(250 +  moveinx,197.5-35)])
+    pygame.draw.polygon(screen,(125, 88, 57), points = [(238 + moveinx,141.99 + 40),(238+moveinx,217+80),(250 + moveinx,272.5 + 52),(250 +  moveinx,197.5-35)])
     #third trap, between top right and top left.
-    pygame.draw.polygon(screen,"green", points = [(375 + moveinx2,326-moveiny),(278+moveinx2,326-moveiny),(266+moveinx2,(324.5 - 10)-moveiny),(387 + moveinx2 ,(324.5 - 10)-moveiny)])
+    pygame.draw.polygon(screen,(125, 88, 57), points = [(375 + moveinx2,326-moveiny),(278+moveinx2,326-moveiny),(266+moveinx2,(324.5 - 10)-moveiny),(387 + moveinx2 ,(324.5 - 10)-moveiny)])
     #parallel traps. to flip it in the x direction, swap the top and bottom y's with their corresponding direction (top left's y swaps with bottom right's y)
     #parallel to first trap
-    pygame.draw.polygon(screen,"green", points = [(238 + moveinx3,371.5),(238 + moveinx3,545),(250 + moveinx3, 516.5),(250 +  moveinx3, 395)])
+    pygame.draw.polygon(screen,(125, 88, 57), points = [(238 + moveinx3,371.5),(238 + moveinx3,545),(250 + moveinx3, 516.5),(250 +  moveinx3, 395)])
     #parallel to second trap
-    pygame.draw.polygon(screen,"green", points = [(238 + moveinx3,197.5-35),(238+moveinx3, 272.5 + 52),(250 + moveinx3,217+80),(250 +  moveinx3, 141.99 + 40)])
+    pygame.draw.polygon(screen,(125, 88, 57), points = [(238 + moveinx3,197.5-35),(238+moveinx3, 272.5 + 52),(250 + moveinx3,217+80),(250 +  moveinx3, 141.99 + 40)])
     #parallel to third trap
-    pygame.draw.polygon(screen,"green", points = [(387 + moveinx2,326-moveiny2),(266+moveinx2,326-moveiny2),( 278+moveinx2,(324.5 - 10)-moveiny2),( 375 + moveinx2,(324.5 - 10)-moveiny2)])
+    pygame.draw.polygon(screen,(125, 88, 57), points = [(387 + moveinx2,326-moveiny2),(266+moveinx2,326-moveiny2),( 278+moveinx2,(324.5 - 10)-moveiny2),( 375 + moveinx2,(324.5 - 10)-moveiny2)])
 
     drawBallPocketTracker()
 
