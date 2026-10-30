@@ -1,11 +1,4 @@
-''' known issues
---randomly crashes when degrees is not set. 
--fix??: <= 360. 360 laid between more than and less than and the interpreter didn't know what to do with that. more testing may be needed.
--- the cuestick moved in a sort of sin wave formation. 
--fix: using a polygon and adjusting its coordinates to mimic that of a rectangle that was rotating around the shape.
--- the cuestick would not move/crash
-- fix: no while loops and initialising the class outside of the movemode.'''
-'make it move'
+
 import pygame
 import time
 import math
@@ -67,8 +60,7 @@ rects = [
     (550,114+470,217,15), # bottom rect
     (550,114,217,15) # top rect
 ]
-def getMousePos():
-    print(pygame.mouse.get_pos())
+
 # from left to right, top right, top left, bottom left, bottom right for the points of the trapezium
 
 ### Pymunk Setup
@@ -123,7 +115,7 @@ ball = [Balls() for _ in range(10)]
 for i in range(9):
     ball[i].ballNumber = i + 1 # so that the numbered balls have their correct number and the cueball is just ball 0.
     ball[i].collisionShape.collision_type = i + 1
-    print("Ball number is",ball[i].ballNumber, "for", i) # debug code.
+    
 
 # initialises cueball so tbhey can be editted.
 cueBall = Balls(cx,cy,ballNumber = 0)
@@ -137,36 +129,28 @@ def collide(arbiter,space,data): # check this
     global foul
     global objectBall
     global objectBallCollided
-    print("collision successful")
     hit = True
     
-    print("the pair of shapes collided with are:",arbiter.shapes)
     if arbiter.shapes[1].collision_type == 10: # only in the case of a collision with the pockets.
         arbiter.shapes[0].body.position = (5000,5000)
         x = arbiter.shapes[0].collision_type
         #space.remove(arbiter.shapes[0])
-        print("This numbered shape",x,"will be removed from displayedBall")
         if x != 0: # collision type 0 is the cueball, which isn't included in the displayedBall array
             displayedBall[x - 1] = "pocketed"
         if x == 0:
             cueBallPocketed = True
     if arbiter.shapes[0].collision_type == 0 and arbiter.shapes[1].collision_type == objectBall:
-        print("Object ball has been collided with, no foul.")
         objectBallCollided = True    # set to true.
     elif arbiter.shapes[0].collision_type == 0 and arbiter.shapes[1].collision_type != objectBall and breakShot == False and objectBallCollided == False: # since the breakshot has rules of its own.
         
         foul = True
     
 
-    print("Object ball is",objectBall)
         
     return True
 
 
-'''def pocketCollision(arbiter,space,data): # detects which bodies are needed, given that separate is false (made contact). 
-    pocket =  # comes out with the body of the balls 
-    print("pocket is",pocket)
-    return False'''
+
 ## for multiple collisions
 handlers = [space.add_collision_handler(0, i+1) for i in range(0,10)] # use this when you need to process a collision.
 for i, handler in enumerate(handlers):
@@ -187,7 +171,7 @@ for i, handler in enumerate(handlers2):
 #draw the segment walls
 segment_body = pymunk.Body(body_type=pymunk.Body.STATIC)
 pymunk.pygame_util.positive_y_is_up = True # to draw it in the pymunk way whic is the way it initialises the bodies.
-'''cushion = pymunk.Segment(segment_body,(238+moveinx, 516.5), (238+moveinx,395), radius = 1)'''
+
 cushion = [0]*len(polygons) # initialise this so it makes sense in the code below.
 space.add(segment_body)
 ## adding cushions
@@ -230,7 +214,7 @@ rail = [0]*len(rects)
 for i in range(0,len(rail), 2):
     #constants are to translate it in the right place. radius is 3 because this is the sweet spot for the constants to put them in accurate positions.
     #translates them individually
-    print(i)
+    
     rail[i] = pymunk.Segment(segment_body,(rects[i][0] + 10,720 - rects[i][1]),(rects[i][0] + 10, 720 - (rects[i][1] + rects[i][3])),radius = 3)
     rail[i + 1] = pymunk.Segment(segment_body,(rects[i + 1][0] + 4,720 - rects[i + 1][1]),(rects[i + 1][0] + 4,720 - (rects[i+1][1] + rects[i][3])),radius = 3)
     if i == 2:
@@ -428,7 +412,7 @@ def motionLogic(vType,massType,dx,dy,degrees):
     hit = False
     
     motionExists = True
-    print("displayedBall is", displayedBall)
+    
     while motionExists == True:
         conversionFactor = 100 # used to convert the metres to pixels.
         def convertValues(value, conversionFactor = conversionFactor):
@@ -472,7 +456,7 @@ def motionLogic(vType,massType,dx,dy,degrees):
         screen.blit(ballSurface, position)
         drawnBalls = drawOtherBalls() # holds the get_rects, to check for collisions and move them
         drawnBallPosition = []
-        print("Ball coords are",cueBall.cx, cueBall.cy)
+        
         for i in range(len(drawnBalls)):
             drawnBallPosition.append(drawnBalls[i])
         pygame.display.update()
@@ -527,9 +511,7 @@ def motionLogic(vType,massType,dx,dy,degrees):
                 drawOtherBalls()
             
             
-            '''if len(pocketBall) > 0:
-                
-                # get rid of the ball that's been pocketed and track what ball it is.'''
+            
 
                 
             screen.blit(ballSurface, displayedCueBall) # necessary for the smooth animation. 
@@ -544,14 +526,12 @@ def motionLogic(vType,massType,dx,dy,degrees):
                 #move at the same/similar angle to when it collided. recalculate displacement here
                 # from the point it makes the collision
         ##contingency code
-        '''pygame.draw.circle(screen,(255,255,255),center = displayedCueBall.center,radius = 6)
-        screen.blit(displayedCueBall, displayedCueBall)
-        pygame.display.update()'''
+        
         # MAKE SURE TO UPDATE THIS SO THAT THE CUESTICK IS IN THE RIGHT PLACE
         cx = cueBall.cx
         cy = cueBall.cy 
         motionExists = False
-        print(len(pocketedBalls))
+        
     
     if hit == False:
         
@@ -674,11 +654,7 @@ def gameRestart():
 ## creating a move mode
 ### if left mouse button hasn't been pressed, then move mode is passed.
 def moveMode():
-    '''
-    #issue checklist
-    is the issue in regards to the loop? <-- This one.  '''
-    ''' To explain: this code will still run infinitely, so no while loop is needed. In its place, just conditionals are fine.
-    Why? Probably because of the while loop at the start. It'll just keep running through the code as long as the program is running'''
+    
     global cx
     global cy 
     #initialise some variables
@@ -789,9 +765,9 @@ def hitMode(dx,dy,degrees):
                     pygame.draw.rect(screen,backgroundColour,rect1)
                     count = 0
                     time1 = time.time() # to reset the clock.
-            print(SDP) # for debugging
+            
     elif event.type == pygame.MOUSEBUTTONUP:
-        print("Count is", count)
+        
         match count:
             case 0:
                 motionLogic(softV,cueStickMass,dx,dy,degrees) # cue stick mass is used in this case because it's the thing causing it to move. it's transferring everything to cueball.
