@@ -23,6 +23,8 @@ You will not be able to hit the cue-ball until the cue-ball has finished its mot
 
 Hold E to see the numbers on the balls.
 
+At the bottom right is where the balls are tracked. From left to right it's: 1,2,3,4,5,6,7,8,9
+
 ### Known Issues
 The ball may move too fast, low power is needed to get somewhat good control.
 Collision tunneling
