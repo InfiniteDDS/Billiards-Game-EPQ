@@ -14,7 +14,7 @@ This is a playable billiards game using python + pygame and pymunk with nine-bal
 ### Requirements
 - Billiards-game.exe
 ### Install Instructions 
-To play the game, go to dist, download billiards-game.exe. 
+To play the game, go to the dist folder in the repo, download billiards-game.exe. 
 Once it's finished downloading, double click it and it will open in a 1280x720 interface.
 ### User Instructions
 To see the cue stick and move it around, hold left mouse. When you’ve decided on the angle to hit it at, hold right mouse and let go of the left mouse. Red bars will appear to the right. 4 is the max, with the highest power, and 1 is the lowest with soft power. 
