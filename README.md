@@ -7,13 +7,9 @@ This is a playable billiards game using python + pygame and pymunk with nine-bal
 - Animated ball movement (with pygame's blit function)
 - Fully functional cue-stick that orbits the ball in the way you choose.
 
-## Demos
-### Prototype 1
-![til](https://github.com/InfiniteDDS/Billiards-Game-EPQ/blob/main/image2.gif)
-### Prototype 2
-![til](https://github.com/InfiniteDDS/Billiards-Game-EPQ/blob/main/image1.gif)
-### Prototype 3
-![til](https://github.com/InfiniteDDS/Billiards-Game-EPQ/blob/main/prototype3.gif)
+## Demo
+![til](https://github.com/InfiniteDDS/Billiards-Game-EPQ/blob/main/complete-demo.gif)
+
 ## Overview
 ### Requirements
 - Python + pygame and pymunk installed (TBC)
@@ -25,10 +21,27 @@ Then, when you’ve decided on the desired power, release the right mouse button
 
 You will not be able to hit the cue-ball until the cue-ball has finished its motion
 
+Hold E to see the numbers on the balls.
+
+At the bottom right is where the balls are tracked. From left to right it's: 1,2,3,4,5,6,7,8,9
+
 ### Known Issues
 The ball may move too fast, low power is needed to get somewhat good control.
+Collision tunneling
+Balls will disappear when displaying foul text
+if the balls are near the rail on a breakshot, it will be counted as a foul if none of them has been pocketed.
+If you pocket the cueball as you pocket the nine ball, the game won't restart if you keep pocketing the cueball
 
-
+# Prototypes
+## Prototype 1
+This one was where I hand-coded the physics, so only the cueball had physics after colliding with the rail.
+![til](https://github.com/InfiniteDDS/Billiards-Game-EPQ/blob/main/image2.gif)
+## Prototype 2
+This one involved PyMunk but I didn't know how to transfer my hand-coded physics to PyMunk's physics.
+![til](https://github.com/InfiniteDDS/Billiards-Game-EPQ/blob/main/image1.gif)
+## Prototype 3
+This implementation fully involved PyMunk but had no game rules. No ability to pocket or restart the game/foul.
+![til](https://github.com/InfiniteDDS/Billiards-Game-EPQ/blob/main/prototype3.gif)
 
 
 
