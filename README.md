@@ -25,9 +25,14 @@ Then, when you’ve decided on the desired power, release the right mouse button
 
 You will not be able to hit the cue-ball until the cue-ball has finished its motion
 
+Hold E to see the numbers on the balls.
+
 ### Known Issues
 The ball may move too fast, low power is needed to get somewhat good control.
-
+Collision tunneling
+Balls will disappear when displaying foul text
+if the balls are near the rail on a breakshot, it will be counted as a foul if none of them has been pocketed.
+If you pocket the cueball as you pocket the nine ball, the game won't restart if you keep pocketing the cueball
 
 
 
