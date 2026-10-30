@@ -25,9 +25,9 @@ Then, when you’ve decided on the desired power, release the right mouse button
 
 You will not be able to hit the cue-ball until the cue-ball has finished its motion
 
-### Issues
+### Known Issues
 The ball may move too fast, low power is needed to get somewhat good control.
-The balls aren't being pocketed, and there are no nine-ball pool rules.
+
 
 
 
